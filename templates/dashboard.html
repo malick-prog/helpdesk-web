@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% set active = "dashboard" %}
+{% block content %}
+<h1 class="page-title">Tableau de bord</h1>
+<p class="page-sub">Vue globale de l'activité du support informatique.</p>
+
+<div class="stats-row">
+  <div class="stat-card"><div class="stat-icon">📂</div><div class="stat-name">Ouverts</div><div class="stat-value">{{ stats.ouverts }}</div></div>
+  <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-name">En cours</div><div class="stat-value">{{ stats.en_cours }}</div></div>
+  <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-name">Résolus</div><div class="stat-value">{{ stats.resolus }}</div></div>
+  <div class="stat-card"><div class="stat-icon">🚨</div><div class="stat-name">Critiques</div><div class="stat-value">{{ stats.critiques }}</div></div>
+</div>
+{% endblock %}

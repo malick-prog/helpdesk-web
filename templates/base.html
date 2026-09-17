@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>HelpDesk IT</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <aside class="side">
+    <div class="brand">
+      <div class="brand-title">HELPDESK</div>
+      <div class="brand-sub">IT SUPPORT</div>
+    </div>
+    <nav>
+      <a href="{{ url_for('home') }}" class="nav-link {{ 'active' if active=='home' else '' }}">🏠 Accueil</a>
+      <a href="{{ url_for('create_ticket') }}" class="nav-link {{ 'active' if active=='create' else '' }}">🎫 Créer un ticket</a>
+      <a href="{{ url_for('list_tickets') }}" class="nav-link {{ 'active' if active=='list' else '' }}">📋 Tous les tickets</a>
+      <a href="{{ url_for('dashboard') }}" class="nav-link {{ 'active' if active=='dashboard' else '' }}">📊 Tableau de bord</a>
+    </nav>
+    <div class="side-footer">
+      <div class="status">● Système opérationnel</div>
+      <div class="version">v1.0 • HelpDesk IT</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-wrap">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% set active = "create" %}
+{% block content %}
+<h1 class="page-title">Créer un ticket</h1>
+<p class="page-sub">Décrivez votre problème afin que le support puisse intervenir.</p>
+
+<form method="POST" class="card">
+  <label>Nom de l'utilisateur</label>
+  <input type="text" name="utilisateur" required>
+
+  <label>Titre du problème</label>
+  <input type="text" name="titre" required>
+
+  <div class="row-2">
+    <div>
+      <label>Catégorie</label>
+      <select name="categorie">
+        {% for c in categories %}
+        <option value="{{ c }}">{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Priorité</label>
+      <select name="priorite">
+        {% for p in priorites %}
+        <option value="{{ p }}" {{ "selected" if p == "Moyenne" else "" }}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <label>Description</label>
+  <textarea name="description" rows="7" required></textarea>
+
+  <button type="submit" class="btn btn-right">✓ Envoyer le ticket</button>
+</form>
+{% endblock %}

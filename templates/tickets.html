@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% set active = "list" %}
+{% block content %}
+<h1 class="page-title">Tickets</h1>
+<p class="page-sub">Consultez et gérez les demandes de support.</p>
+
+<form method="GET" class="search-form">
+  <input type="text" name="q" value="{{ term }}" placeholder="Rechercher...">
+</form>
+
+<div class="ticket-list">
+  {% for t in tickets %}
+  <a href="{{ url_for('ticket_detail', ticket_id=t.id) }}" class="ticket-row">
+    #{{ t.id }} &nbsp; {{ t.titre }} &nbsp;|&nbsp; {{ t.priorite }} &nbsp;|&nbsp; {{ t.statut }} &nbsp;|&nbsp; {{ t.utilisateur }} &nbsp;|&nbsp; {{ t.date_creation }}
+  </a>
+  {% else %}
+  <p class="muted">Aucun ticket trouvé.</p>
+  {% endfor %}
+</div>
+{% endblock %}

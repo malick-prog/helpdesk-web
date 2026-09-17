@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% set active = "home" %}
+{% block content %}
+<h1 class="page-title">Bienvenue sur HelpDesk IT</h1>
+<p class="page-sub">Votre plateforme de support informatique</p>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon">🎫</div>
+    <div class="stat-name">Tickets</div>
+    <div class="stat-value">{{ stats.total }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🟠</div>
+    <div class="stat-name">En cours</div>
+    <div class="stat-value">{{ stats.en_cours }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🟢</div>
+    <div class="stat-name">Résolus</div>
+    <div class="stat-value">{{ stats.resolus }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Besoin d'aide informatique ?</h2>
+  <p class="muted">Créez un ticket et notre équipe support prendra votre demande en charge.</p>
+  <a href="{{ url_for('create_ticket') }}" class="btn">🎫 Créer un ticket</a>
+</div>
+{% endblock %}

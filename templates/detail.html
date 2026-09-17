@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% set active = "list" %}
+{% block content %}
+<h1 class="page-title">Ticket #{{ t.id }}</h1>
+<p class="page-sub">Détails et gestion de la demande.</p>
+
+<div class="card">
+  <p>Titre : {{ t.titre }}</p>
+  <p>Utilisateur : {{ t.utilisateur }}</p>
+  <p>Catégorie : {{ t.categorie }}</p>
+  <p>Priorité : {{ t.priorite }}</p>
+  <p>Statut : {{ t.statut }}</p>
+  <p>Créé le : {{ t.date_creation }}</p>
+  {% if t.technicien %}<p>Technicien : {{ t.technicien }}</p>{% endif %}
+
+  <h3>Description</h3>
+  <p class="muted">{{ t.description }}</p>
+
+  <div class="actions">
+    <form method="POST" action="{{ url_for('update_status', ticket_id=t.id) }}" style="display:inline">
+      <input type="hidden" name="statut" value="En cours">
+      <button class="btn-sm">🔧 Prendre en charge</button>
+    </form>
+    <form method="POST" action="{{ url_for('update_status', ticket_id=t.id) }}" style="display:inline">
+      <input type="hidden" name="statut" value="Résolu">
+      <button class="btn-sm">🟢 Résolu</button>
+    </form>
+    <form method="POST" action="{{ url_for('update_status', ticket_id=t.id) }}" style="display:inline">
+      <input type="hidden" name="statut" value="Fermé">
+      <button class="btn-sm">⚫ Fermé</button>
+    </form>
+  </div>
+
+  <h3>Intervention</h3>
+  <form method="POST" action="{{ url_for('intervention', ticket_id=t.id) }}">
+    <textarea name="solution" rows="4" placeholder="Décrire l'intervention">{{ t.solution }}</textarea>
+    <button class="btn">📝 Enregistrer</button>
+  </form>
+
+  <h3>Historique</h3>
+  {% for h in t.historique[-5:] %}
+  <p class="muted">• {{ h.date }} — {{ h.action }}</p>
+  {% endfor %}
+</div>
+{% endblock %}
