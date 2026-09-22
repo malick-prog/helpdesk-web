@@ -1,6 +1,2 @@
 Flask>=3.0
-<<<<<<< HEAD
 gunicorn>=21.0
-=======
-gunicorn
->>>>>>> e447125f00edfeca92ebcfdcba30efd036e5930e
