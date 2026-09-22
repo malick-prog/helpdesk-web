@@ -2,10 +2,22 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>HelpDesk IT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}HelpDesk IT — Gestion de tickets support{% endblock %}</title>
+<meta name="description" content="{% block description %}Plateforme de gestion de tickets de support informatique pour petites entreprises.{% endblock %}">
+
+<!-- Open Graph / prévisualisation réseaux sociaux -->
+<meta property="og:title" content="{% block og_title %}HelpDesk IT{% endblock %}">
+<meta property="og:description" content="{% block og_description %}Gérez vos demandes de support informatique simplement.{% endblock %}">
+<meta property="og:type" content="website">
+<meta property="og:image" content="{{ url_for('static', filename='og-image.png', _external=True) }}">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎫</text></svg>">
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
   <aside class="side">
     <div class="brand">
       <div class="brand-title">HELPDESK</div>
@@ -18,22 +30,53 @@
       <a href="{{ url_for('dashboard') }}" class="nav-link {{ 'active' if active=='dashboard' else '' }}">📊 Tableau de bord</a>
     </nav>
     <div class="side-footer">
+      {% if current_user %}
+      <div class="account">{{ current_user.entreprise }}</div>
+      <a href="{{ url_for('logout') }}" class="logout-link">Se déconnecter</a>
+      {% endif %}
+      <div class="legal-links">
+        <a href="{{ url_for('rgpd') }}">RGPD</a> · <a href="{{ url_for('cgu') }}">CGU</a>
+      </div>
       <div class="status">● Système opérationnel</div>
       <div class="version">v1.0 • HelpDesk IT</div>
     </div>
   </aside>
 
-  <main class="main">
+  <main class="main" id="main-content">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="flash-wrap">
         {% for category, message in messages %}
-          <div class="flash flash-{{ category }}">{{ message }}</div>
+          <div class="flash flash-{{ category }}" role="alert">{{ message }}</div>
         {% endfor %}
         </div>
       {% endif %}
     {% endwith %}
     {% block content %}{% endblock %}
   </main>
+
+  <div id="cookie-banner" class="cookie-banner" hidden>
+    <p>Ce site utilise des cookies essentiels au fonctionnement (connexion) et, si vous l'acceptez, un outil de mesure d'audience anonyme.</p>
+    <div class="cookie-actions">
+      <button id="cookie-refuse" class="btn-sm">Refuser</button>
+      <button id="cookie-accept" class="btn">Accepter</button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var banner = document.getElementById('cookie-banner');
+      var consent = localStorage.getItem('cookie-consent');
+      if (!consent) { banner.hidden = false; }
+      document.getElementById('cookie-accept').addEventListener('click', function () {
+        localStorage.setItem('cookie-consent', 'accepted');
+        banner.hidden = true;
+        // Charger ici le script d'analytics une fois le consentement donné.
+      });
+      document.getElementById('cookie-refuse').addEventListener('click', function () {
+        localStorage.setItem('cookie-consent', 'refused');
+        banner.hidden = true;
+      });
+    })();
+  </script>
 </body>
 </html>

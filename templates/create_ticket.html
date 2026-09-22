@@ -1,15 +1,21 @@
 {% extends "base.html" %}
 {% set active = "create" %}
+{% block title %}Créer un ticket — HelpDesk IT{% endblock %}
 {% block content %}
 <h1 class="page-title">Créer un ticket</h1>
 <p class="page-sub">Décrivez votre problème afin que le support puisse intervenir.</p>
 
-<form method="POST" class="card">
-  <label>Nom de l'utilisateur</label>
-  <input type="text" name="utilisateur" required>
+<form method="POST" class="card" novalidate>
+  <div class="hp-field" aria-hidden="true">
+    <label for="site_web">Laissez ce champ vide</label>
+    <input type="text" name="site_web" id="site_web" tabindex="-1" autocomplete="off">
+  </div>
+
+  <label for="utilisateur">Nom de l'utilisateur</label>
+  <input type="text" id="utilisateur" name="utilisateur" required minlength="2">
 
   <label>Titre du problème</label>
-  <input type="text" name="titre" required>
+  <input type="text" name="titre" required minlength="3">
 
   <div class="row-2">
     <div>
@@ -31,7 +37,7 @@
   </div>
 
   <label>Description</label>
-  <textarea name="description" rows="7" required></textarea>
+  <textarea name="description" rows="7" required minlength="10"></textarea>
 
   <button type="submit" class="btn btn-right">✓ Envoyer le ticket</button>
 </form>

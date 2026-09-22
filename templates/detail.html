@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% set active = "list" %}
+{% block title %}Ticket #{{ t.id }} — HelpDesk IT{% endblock %}
 {% block content %}
 <h1 class="page-title">Ticket #{{ t.id }}</h1>
 <p class="page-sub">Détails et gestion de la demande.</p>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Créer un compte — HelpDesk IT</title>
+<meta name="description" content="Créez votre espace HelpDesk IT pour gérer les demandes de support de votre entreprise.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎫</text></svg>">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-body">
+  <div class="auth-card">
+    <h1 class="brand-title">HELPDESK</h1>
+    <p class="brand-sub">IT SUPPORT</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}" role="alert">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" novalidate>
+      <div class="hp-field" aria-hidden="true">
+        <label for="site_web">Laissez ce champ vide</label>
+        <input type="text" name="site_web" id="site_web" tabindex="-1" autocomplete="off">
+      </div>
+
+      <label for="entreprise">Nom de l'entreprise</label>
+      <input type="text" id="entreprise" name="entreprise" required minlength="2" autofocus>
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required>
+      <label for="password">Mot de passe</label>
+      <input type="password" id="password" name="password" required minlength="8">
+      <p class="field-hint">8 caractères minimum</p>
+      <button type="submit" class="btn btn-full">Créer le compte</button>
+    </form>
+    <p class="auth-switch">Déjà un compte ? <a href="{{ url_for('login') }}">Se connecter</a></p>
+    <p class="auth-legal">En créant un compte, vous acceptez nos <a href="{{ url_for('cgu') }}">CGU</a> et notre <a href="{{ url_for('rgpd') }}">politique de confidentialité</a>.</p>
+  </div>
+</body>
+</html>

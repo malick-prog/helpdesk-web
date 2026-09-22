@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connexion — HelpDesk IT</title>
+<meta name="description" content="Connectez-vous à votre espace HelpDesk IT.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎫</text></svg>">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-body">
+  <div class="auth-card">
+    <h1 class="brand-title">HELPDESK</h1>
+    <p class="brand-sub">IT SUPPORT</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}" role="alert">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" novalidate>
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required autofocus>
+      <label for="password">Mot de passe</label>
+      <input type="password" id="password" name="password" required>
+      <button type="submit" class="btn btn-full">Se connecter</button>
+    </form>
+    <p class="auth-switch">Pas encore de compte ? <a href="{{ url_for('register') }}">Créer un compte entreprise</a></p>
+    <p class="auth-legal"><a href="{{ url_for('rgpd') }}">RGPD</a> · <a href="{{ url_for('cgu') }}">CGU</a></p>
+  </div>
+</body>
+</html>
