@@ -1,3 +1,4 @@
+import re
 import sqlite3
 from datetime import datetime
 from functools import wraps
@@ -41,6 +42,7 @@ def robots_txt():
         "Disallow: /tickets",
         "Disallow: /dashboard",
         "Allow: /$",
+        "Allow: /t/",
         "Allow: /login",
         "Allow: /register",
         "Allow: /rgpd",
@@ -97,6 +99,7 @@ def init_db():
             entreprise TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            slug TEXT UNIQUE,
             created_at TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS tickets (
@@ -116,8 +119,30 @@ def init_db():
             FOREIGN KEY(owner_id) REFERENCES users(id)
         );
     """)
+    # Migration douce : si la base existe déjà sans colonne slug (créée avant cette
+    # fonctionnalité), on l'ajoute sans perdre les données existantes.
+    cols = [r[1] for r in db.execute("PRAGMA table_info(users)")]
+    if "slug" not in cols:
+        db.execute("ALTER TABLE users ADD COLUMN slug TEXT")
     db.commit()
     db.close()
+
+
+def slugify(text):
+    text = text.lower().strip()
+    replacements = str.maketrans("àâäéèêëîïôöùûüç", "aaaeeeeiioouuuc")
+    text = text.translate(replacements)
+    text = re.sub(r"[^a-z0-9]+", "-", text).strip("-")
+    return text or "entreprise"
+
+
+def unique_slug(db, base):
+    slug = base
+    i = 2
+    while db.execute("SELECT id FROM users WHERE slug = ?", (slug,)).fetchone():
+        slug = f"{base}-{i}"
+        i += 1
+    return slug
 
 
 def now():
@@ -177,8 +202,8 @@ def register():
             return render_template("register.html")
 
         db.execute(
-            "INSERT INTO users (entreprise, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-            (entreprise, email, generate_password_hash(password), now()),
+            "INSERT INTO users (entreprise, email, password_hash, slug, created_at) VALUES (?, ?, ?, ?, ?)",
+            (entreprise, email, generate_password_hash(password), unique_slug(db, slugify(entreprise)), now()),
         )
         db.commit()
         user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
@@ -209,6 +234,49 @@ def logout():
     return redirect(url_for("login"))
 
 
+# ---------- Formulaire public (un lien par entreprise, sans connexion) ----------
+
+@app.route("/t/<slug>", methods=["GET", "POST"])
+def public_ticket_form(slug):
+    import json
+    db = get_db()
+    owner = db.execute("SELECT * FROM users WHERE slug = ?", (slug,)).fetchone()
+    if not owner:
+        flash("Ce lien de support n'existe pas.", "warning")
+        return render_template("404.html"), 404
+
+    if request.method == "POST":
+        # Honeypot anti-spam : formulaire public, plus exposé qu'un formulaire connecté.
+        if request.form.get("site_web", ""):
+            return redirect(url_for("public_ticket_form", slug=slug))
+
+        u = request.form.get("utilisateur", "").strip()
+        t = request.form.get("titre", "").strip()
+        d = request.form.get("description", "").strip()
+        if not u or not t or not d:
+            flash("Remplis le nom, le titre et la description.", "warning")
+            return render_template("public_create.html", owner=owner, categories=CATEGORIES, priorites=PRIORITES)
+
+        date = now()
+        hist = json.dumps([{"date": date, "action": "Ticket créé (formulaire public)"}], ensure_ascii=False)
+        db.execute(
+            """INSERT INTO tickets
+               (owner_id, titre, description, categorie, priorite, statut, utilisateur,
+                technicien, date_creation, date_resolution, solution, historique)
+               VALUES (?, ?, ?, ?, ?, 'Ouvert', ?, '', ?, '', '', ?)""",
+            (
+                owner["id"], t, d,
+                request.form.get("categorie", CATEGORIES[0]),
+                request.form.get("priorite", PRIORITES[1]),
+                u, date, hist,
+            ),
+        )
+        db.commit()
+        return render_template("public_success.html", owner=owner)
+
+    return render_template("public_create.html", owner=owner, categories=CATEGORIES, priorites=PRIORITES)
+
+
 # ---------- Tickets (scoped à l'entreprise connectée) ----------
 
 @app.route("/")
@@ -216,6 +284,12 @@ def logout():
 def home():
     db = get_db()
     owner_id = session["user_id"]
+    user = current_user()
+    if not user["slug"]:
+        new_slug = unique_slug(db, slugify(user["entreprise"]))
+        db.execute("UPDATE users SET slug = ? WHERE id = ?", (new_slug, owner_id))
+        db.commit()
+        user = current_user()
     row = db.execute(
         """SELECT
             COUNT(*) as total,
@@ -226,7 +300,8 @@ def home():
         (owner_id,),
     ).fetchone()
     stats = {k: (row[k] or 0) for k in row.keys()}
-    return render_template("home.html", stats=stats)
+    public_url = url_for("public_ticket_form", slug=user["slug"], _external=True)
+    return render_template("home.html", stats=stats, public_url=public_url)
 
 
 @app.route("/tickets")
@@ -363,4 +438,3 @@ init_db()
 
 if __name__ == "__main__":
     app.run(debug=True)
-    

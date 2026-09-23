@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support {{ owner.entreprise }} — Signaler un problème</title>
+<meta name="description" content="Formulaire de support informatique pour {{ owner.entreprise }}.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎫</text></svg>">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-body">
+  <div class="auth-card" style="width:420px;">
+    <h1 class="brand-title" style="text-align:left;">Support {{ owner.entreprise }}</h1>
+    <p class="page-sub">Décrivez votre problème, un technicien va s'en occuper.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}" role="alert">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" novalidate>
+      <div class="hp-field" aria-hidden="true">
+        <label for="site_web">Laissez ce champ vide</label>
+        <input type="text" name="site_web" id="site_web" tabindex="-1" autocomplete="off">
+      </div>
+
+      <label for="utilisateur">Votre nom</label>
+      <input type="text" id="utilisateur" name="utilisateur" required minlength="2" autofocus>
+
+      <label for="titre">Titre du problème</label>
+      <input type="text" id="titre" name="titre" required minlength="3">
+
+      <div class="row-2">
+        <div>
+          <label for="categorie">Catégorie</label>
+          <select id="categorie" name="categorie">
+            {% for c in categories %}
+            <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="priorite">Priorité</label>
+          <select id="priorite" name="priorite">
+            {% for p in priorites %}
+            <option value="{{ p }}" {{ "selected" if p == "Moyenne" else "" }}>{{ p }}</option>
+            {% endfor %}
+          </select>
+          <p id="priorite-suggestion" class="field-hint" hidden></p>
+        </div>
+      </div>
+
+      <label for="description">Description</label>
+      <textarea id="description" name="description" rows="6" required minlength="10"></textarea>
+
+      <button type="submit" class="btn btn-full">Envoyer</button>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      // Détection de gravité par mots-clés : suggère une priorité à partir du titre
+      // et de la description, sans jamais l'imposer — l'utilisateur garde la main.
+      var KEYWORDS = {
+        "Critique": ["plus acces", "plus d'acces", "tout le monde", "personne ne peut", "serveur", "production", "perte de donnees", "hors service", "en panne totale", "urgent", "immediatement", "bloque tout"],
+        "Haute": ["ne fonctionne plus", "bloque", "impossible de travailler", "plusieurs personnes", "important", "depuis ce matin", "depuis hier"],
+        "Faible": ["quand vous pouvez", "pas urgent", "des que possible sans urgence", "petit souci", "detail", "cosmetique", "esthetique"]
+      };
+
+      function normalize(s) {
+        return s.toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // enlève les accents
+      }
+
+      function suggest() {
+        var text = normalize(
+          document.getElementById("titre").value + " " + document.getElementById("description").value
+        );
+        var order = ["Critique", "Haute", "Faible"]; // du plus fort signal au plus faible
+        for (var i = 0; i < order.length; i++) {
+          var level = order[i];
+          var matched = KEYWORDS[level].find(function (kw) { return text.indexOf(kw) !== -1; });
+          if (matched) return level;
+        }
+        return null;
+      }
+
+      var select = document.getElementById("priorite");
+      var badge = document.getElementById("priorite-suggestion");
+      var userTouchedSelect = false;
+      var lastSuggestion = null;
+
+      select.addEventListener("change", function () { userTouchedSelect = true; });
+
+      function update() {
+        var level = suggest();
+        if (!level) { badge.hidden = true; return; }
+        if (level !== lastSuggestion) {
+          badge.hidden = false;
+          badge.textContent = "Priorité suggérée : " + level + " (d'après votre description)";
+          if (!userTouchedSelect) { select.value = level; }
+          lastSuggestion = level;
+        }
+      }
+
+      document.getElementById("titre").addEventListener("input", update);
+      document.getElementById("description").addEventListener("input", update);
+    })();
+  </script>
+</body>
+</html>

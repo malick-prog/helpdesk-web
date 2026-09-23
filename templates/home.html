@@ -25,6 +25,15 @@
 </div>
 
 <div class="card">
+  <h2>Votre lien de support</h2>
+  <p class="muted">Partagez ce lien avec vos employés : ils pourront signaler un problème sans avoir besoin de compte.</p>
+  <div class="public-link-row">
+    <input type="text" readonly value="{{ public_url }}" id="public-link" onclick="this.select()">
+    <button type="button" class="btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('public-link').value); this.textContent='Copié !'">Copier</button>
+  </div>
+</div>
+
+<div class="card">
   <h2>Besoin d'aide informatique ?</h2>
   <p class="muted">Créez un ticket et notre équipe support prendra votre demande en charge.</p>
   <a href="{{ url_for('create_ticket') }}" class="btn">🎫 Créer un ticket</a>

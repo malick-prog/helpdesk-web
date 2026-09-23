@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ticket envoyé — Support {{ owner.entreprise }}</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎫</text></svg>">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-body">
+  <div class="auth-card" style="text-align:center;">
+    <div style="font-size:40px;">✅</div>
+    <h1 class="brand-title">Ticket envoyé</h1>
+    <p class="muted">Votre demande a bien été transmise à l'équipe support de {{ owner.entreprise }}. Vous serez recontacté dès qu'un technicien s'en occupe.</p>
+    <a href="{{ url_for('public_ticket_form', slug=owner.slug) }}" class="btn btn-full" style="display:inline-block;">Signaler un autre problème</a>
+  </div>
+</body>
+</html>
