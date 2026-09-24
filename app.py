@@ -1,4 +1,5 @@
 import re
+import os
 import sqlite3
 from datetime import datetime
 from functools import wraps
@@ -6,9 +7,21 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = "change-moi-en-production"
+app.secret_key = os.environ.get("SECRET_KEY", "change-moi-en-production")
 
-DATA = "helpdesk.db"
+# En local (pas de variable DATABASE_URL) : SQLite, simple, aucun service à installer.
+# En production (Render) : PostgreSQL via une base externe (ex : Neon), dont
+# l'URL est fournie par la variable d'environnement DATABASE_URL. L'intérêt d'une
+# base externe : elle n'est jamais effacée par un redéploiement de l'appli.
+DATABASE_URL = os.environ.get("DATABASE_URL")
+USE_POSTGRES = bool(DATABASE_URL)
+SQLITE_FILE = "helpdesk.db"
+
+if USE_POSTGRES and DATABASE_URL.startswith("postgres://"):
+    # Certains fournisseurs (dont Render) donnent l'URL avec "postgres://",
+    # mais psycopg2 attend "postgresql://".
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 CATEGORIES = ["Matériel", "Logiciel", "Réseau", "Compte"]
 PRIORITES = ["Faible", "Moyenne", "Haute", "Critique"]
 
@@ -77,10 +90,45 @@ def cgu():
     return render_template("cgu.html")
 
 
+class DBWrapper:
+    """Petite couche qui laisse le reste du code écrire ses requêtes une seule
+    fois (avec des '?' comme en SQLite), et les adapte automatiquement au
+    format attendu par PostgreSQL ('%s') quand on est en production."""
+
+    def __init__(self, conn):
+        self.conn = conn
+
+    def execute(self, query, params=()):
+        if USE_POSTGRES:
+            cur = self.conn.cursor()
+            cur.execute(query.replace("?", "%s"), params)
+            return cur
+        return self.conn.execute(query, params)
+
+    def executescript(self, script):
+        if USE_POSTGRES:
+            cur = self.conn.cursor()
+            cur.execute(script)
+        else:
+            self.conn.executescript(script)
+
+    def commit(self):
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
+
+
 def get_db():
     if "db" not in g:
-        g.db = sqlite3.connect(DATA)
-        g.db.row_factory = sqlite3.Row
+        if USE_POSTGRES:
+            import psycopg2
+            import psycopg2.extras
+            conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+        else:
+            conn = sqlite3.connect(SQLITE_FILE)
+            conn.row_factory = sqlite3.Row
+        g.db = DBWrapper(conn)
     return g.db
 
 
@@ -92,7 +140,45 @@ def close_db(exception=None):
 
 
 def init_db():
-    db = sqlite3.connect(DATA)
+    if USE_POSTGRES:
+        import psycopg2
+        conn = psycopg2.connect(DATABASE_URL)
+        db = DBWrapper(conn)
+        db.executescript("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                entreprise TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                slug TEXT UNIQUE,
+                created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS tickets (
+                id SERIAL PRIMARY KEY,
+                owner_id INTEGER NOT NULL REFERENCES users(id),
+                titre TEXT NOT NULL,
+                description TEXT NOT NULL,
+                categorie TEXT,
+                priorite TEXT,
+                statut TEXT,
+                utilisateur TEXT,
+                technicien TEXT,
+                date_creation TEXT,
+                date_resolution TEXT,
+                solution TEXT,
+                historique TEXT
+            );
+        """)
+        cur = db.execute("SELECT column_name FROM information_schema.columns WHERE table_name='users'")
+        cols = [r["column_name"] for r in cur.fetchall()]
+        if "slug" not in cols:
+            db.execute("ALTER TABLE users ADD COLUMN slug TEXT")
+        db.commit()
+        db.close()
+        return
+
+    conn = sqlite3.connect(SQLITE_FILE)
+    db = DBWrapper(conn)
     db.executescript("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,7 +207,7 @@ def init_db():
     """)
     # Migration douce : si la base existe déjà sans colonne slug (créée avant cette
     # fonctionnalité), on l'ajoute sans perdre les données existantes.
-    cols = [r[1] for r in db.execute("PRAGMA table_info(users)")]
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(users)")]
     if "slug" not in cols:
         db.execute("ALTER TABLE users ADD COLUMN slug TEXT")
     db.commit()
@@ -153,6 +239,12 @@ def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
         if "user_id" not in session:
+            return redirect(url_for("login"))
+        if current_user() is None:
+            # La session pointe vers un compte qui n'existe plus (ex : base
+            # réinitialisée lors d'un redéploiement). On nettoie plutôt que de planter.
+            session.clear()
+            flash("Ta session a expiré, reconnecte-toi.", "warning")
             return redirect(url_for("login"))
         return view(*args, **kwargs)
     return wrapped
