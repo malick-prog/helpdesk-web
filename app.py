@@ -17,10 +17,19 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 USE_POSTGRES = bool(DATABASE_URL)
 SQLITE_FILE = "helpdesk.db"
 
-if USE_POSTGRES and DATABASE_URL.startswith("postgres://"):
-    # Certains fournisseurs (dont Render) donnent l'URL avec "postgres://",
-    # mais psycopg2 attend "postgresql://".
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+if USE_POSTGRES:
+    if DATABASE_URL.startswith("postgres://"):
+        # Certains fournisseurs (dont Render) donnent l'URL avec "postgres://",
+        # mais psycopg2 attend "postgresql://".
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+    # Neon ajoute parfois "channel_binding=require" dans l'URL, un paramètre que
+    # la version de psycopg2 installée ici ne reconnaît pas ("invalid channel_binding
+    # value"). On le retire : sslmode=require suffit pour chiffrer la connexion.
+    from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+    parts = urlsplit(DATABASE_URL)
+    query_pairs = [(k, v) for k, v in parse_qsl(parts.query) if k != "channel_binding"]
+    DATABASE_URL = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query_pairs), parts.fragment))
 
 CATEGORIES = ["Matériel", "Logiciel", "Réseau", "Compte"]
 PRIORITES = ["Faible", "Moyenne", "Haute", "Critique"]
