@@ -179,7 +179,7 @@ def init_db():
             );
         """)
         cur = db.execute("SELECT column_name FROM information_schema.columns WHERE table_name='users'")
-        cols = [r["column_name"] for r in cur.fetchall()]
+        cols = [r[0] for r in cur.fetchall()]
         if "slug" not in cols:
             db.execute("ALTER TABLE users ADD COLUMN slug TEXT")
         db.commit()
